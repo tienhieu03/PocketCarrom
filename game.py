@@ -1,5 +1,6 @@
 from menu.menu import *
 from menu.options import *
+from menu.music import *
 from play_game import *
 
 class Game():
@@ -12,6 +13,7 @@ class Game():
         icon = pygame.display.set_icon(pygame.image.load(PATH_IMAGE + "icon.ico"))
         self.font_name = 'dogicapixelbold.ttf'
         self.window_color = COLOR_BACKGROUND
+        self.music = Music(self)
         self.main_menu = MainMenu(self)
         self.options = OptionsMenu(self)
         self.credits = CreditsMenu(self)
