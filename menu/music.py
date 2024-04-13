@@ -67,7 +67,7 @@ def __init__(self, game):
 self.sfx = SoundEffect(game)
 in event:
 elif event.key == pygame.K_t:  # T key
-                 ->  effect1 = self.sfx.load_sound(PATH_SOUND + "ahuevo.mp3")
+                 ->  effect1 = self.sfx.load_sound(PATH_SOUND + "shot.mp3")
                 -> self.sfx.play_sound(effect1)
                  print("T key pressed")
                  
@@ -75,7 +75,7 @@ Example2:
 in init:
 def __init__(self, game):
 self.sfx = SoundEffect(game)
-        self.effect1 = self.sfx.load_sound(PATH_SOUND + "ahuevo.mp3")
+        self.effect1 = self.sfx.load_sound(PATH_SOUND + "shot.mp3")
         
         
 in event:
