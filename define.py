@@ -32,7 +32,7 @@ PATH_MENU = os.path.join(PATH_DIRECTORY, "assets/menu/")
 MAXFORCE = 100
 INCREASE_RATE = 80  # Tốc độ tăng lực mỗi giây
 DECREASE_RATE = 80  # Tốc độ giảm lực mỗi giây
-POCKET_DIA = 50
+POCKET_DIA = 48  # Đường kính lỗ
 #tạo cạnh bàn carrom
 CUSHION = [
     [(200,0), (260,38), (1000,0), (940,38)],

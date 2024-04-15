@@ -56,7 +56,8 @@ class PlayGame:
             self.ball_images.append(the_ball)
         self.cue = Cue(self.cue_ball.body.position)
         self.potted_ball = []
-        self.black_ball_potted = False
+
+
     def create_ball(self, radius, pos):
         body = pymunk.Body()
         body.position = pos
@@ -100,6 +101,7 @@ class PlayGame:
                 self.cue_ball.body.position = (new_x, self.cue_ball.body.position[1])
                 self.key_down = False
 
+
     def start_game(self):
         running = True
         for c in CUSHION:
@@ -121,12 +123,17 @@ class PlayGame:
                     if ball_dist <= POCKET_DIA / 2:
                         self.space.remove(ball.body)
                         self.balls.remove(ball)
-                        self.potted_ball.append(self.ball_images[i])
+                        self.potted_ball.append("a")
                         self.ball_images.pop(i)
                         if i % 2 ==0:
                             self.playerturn = False
                         elif i % 2 !=0:
                             self.playerturn = True
+                        elif i == 9:
+                            if self.playerturn == True:
+                                self.playerturn = True
+                            elif self.playerturn == False:
+                                self.playerturn = False
                     if self.playerturn == False:
                         self.playerturn = True
 
