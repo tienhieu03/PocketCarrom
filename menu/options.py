@@ -42,14 +42,14 @@ class VolumeMenu(Menu):
         self.game = game
         self.music = Music(game)
         self.sfx = SoundEffect(game)
-        self.effect1 = self.sfx.load_sound(PATH_SOUND + "shot.wav")
+        self.effect1 = self.sfx.load_sound(PATH_SOUND + "collat.wav")
         self.selected_sound = "Master"
 
     def display_menu(self):
         self.run_display = True
         music_text_y = WINDOW_HEIGHT / 4 + 120
         sfx_text_y = WINDOW_HEIGHT / 4 + 230
-        master_text_y = WINDOW_HEIGHT / 4 - 40
+        master_text_y = WINDOW_HEIGHT / 4 - 10
         while self.run_display:
             self.game.check_events()
             if self.game.BACK_KEY:
@@ -139,26 +139,28 @@ class VolumeMenu(Menu):
             elif self.selected_sound == 'Sfx':
                 self.selected_sound = 'Music'
                 print("Selected sound:", self.selected_sound)
+
     def check_input(self):
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
-                pygame.quit()
-            if event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_LEFT:
-                    if self.selected_sound == "Master":
-                        self.master_volume.decrease_volume()
-                    elif self.selected_sound == "Music":
-                        self.music.decrease_volume()
-                    elif self.selected_sound == "Sfx":
-                        self.sfx.decrease_volume()
-                if event.key == pygame.K_RIGHT:
-                    if self.selected_sound == "Master":
-                        self.master_volume.increase_volume()
-                    elif self.selected_sound == "Music":
-                        self.music.increase_volume()
-                    elif self.selected_sound == "Sfx":
-                        self.sfx.increase_volume()
-                if event.key == pygame.K_t:
-                    self.sfx.play_sound(self.effect1)
+        keys = pygame.key.get_pressed()
+
+        if keys[pygame.K_LEFT]:
+            if self.selected_sound == "Master":
+                self.master_volume.decrease_volume()
+            elif self.selected_sound == "Music":
+                self.music.decrease_volume()
+            elif self.selected_sound == "Sfx":
+                self.sfx.decrease_volume()
+
+        if keys[pygame.K_RIGHT]:
+            if self.selected_sound == "Master":
+                self.master_volume.increase_volume()
+            elif self.selected_sound == "Music":
+                self.music.increase_volume()
+            elif self.selected_sound == "Sfx":
+                self.sfx.increase_volume()
+
+        if keys[pygame.K_t]:
+            self.sfx.play_sound(self.effect1)
+
         self.move_cursor()
     #TODO: Add volume control
