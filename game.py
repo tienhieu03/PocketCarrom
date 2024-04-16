@@ -14,6 +14,7 @@ class Game():
         icon = pygame.display.set_icon(pygame.image.load(PATH_IMAGE + "icon.ico"))
         self.font_name = 'dogicapixelbold.ttf'
         self.window_color = COLOR_BACKGROUND
+        self.master_volume = MasterVolume(self)
         self.music = Music(self)
         self.sfx = SoundEffect(self)
         self.main_menu = MainMenu(self)
@@ -22,6 +23,8 @@ class Game():
         self.volume = VolumeMenu(self)
         self.curr_menu = self.main_menu
         self.run = True
+        self.music.load_music(PATH_SOUND + "8-bit.mp3")
+        self.music.play_music()
 
     def game_loop(self):
         while self.playing:
