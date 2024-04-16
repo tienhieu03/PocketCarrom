@@ -18,6 +18,10 @@ class Menu():
         self.volume_hover_img = pygame.image.load(PATH_MENU + 'volume_hover.png').convert()
         self.credits_img = pygame.image.load(PATH_MENU + 'credits_btn.png').convert()
         self.credits_hover_img = pygame.image.load(PATH_MENU + 'credits_hover.png').convert()
+        self.pvp_img = pygame.image.load(PATH_MENU + 'pvp_btn.png').convert()
+        self.pvp_hover_img = pygame.image.load(PATH_MENU + 'pvp_hover.png').convert()
+        self.pvsai_img = pygame.image.load(PATH_MENU + 'pvsai_btn.png').convert()
+        self.pvsai_hover_img = pygame.image.load(PATH_MENU + 'pvsai_hover.png').convert()
 
 
     def blit_screen(self):
@@ -32,7 +36,6 @@ class MainMenu(Menu):
         self.startx, self.starty = START_POSITION
         self.optionsx, self.optionsy = OPTIONS_POSITION
         self.exitx, self.exity = EXIT_POSITION
-
 
     def display_menu(self):
         self.run_display = True
@@ -84,12 +87,66 @@ class MainMenu(Menu):
         self.move_cursor()
         if self.game.START_KEY:
             if self.state == 'Start':
-                self.game.playing = True
-                self.game.game_loop()
+                self.game.curr_menu = self.game.mode
             elif self.state == 'Options':
                 self.game.curr_menu = self.game.options
             elif self.state == 'Exit':
                 self.game.running, self.game.playing = False, False
+            self.run_display = False
+
+class ModeMenu(Menu):
+    def __init__(self, game):
+        Menu.__init__(self, game)
+        self.state = 'PVP'
+        self.pvpx, self.pvpy = PVP_POSITION
+        self.pvsaix, self.pvsaiy = PVSAI_POSITION
+
+    def display_menu(self):
+        self.run_display = True
+        while self.run_display:
+            self.game.check_events()
+            self.check_input()
+            self.game.WINDOW_GAME.fill(self.game.window_color)
+            self.game.draw_text('Mode Selection', 48, WINDOW_WIDTH / 2, WINDOW_HEIGHT / 4 - 60)
+            self.draw_menu_options()
+            self.blit_screen()
+
+    def draw_menu_options(self):
+        if self.state == 'PVP':
+            self.game.WINDOW_GAME.blit(self.pvp_hover_img, (self.pvpx, self.pvpy))
+            self.game.WINDOW_GAME.blit(self.pvsai_img, (self.pvsaix, self.pvsaiy))
+        elif self.state == 'P vs AI':
+            self.game.WINDOW_GAME.blit(self.pvp_img, (self.pvpx, self.pvpy))
+            self.game.WINDOW_GAME.blit(self.pvsai_hover_img, (self.pvsaix, self.pvsaiy))
+
+    def move_cursor(self):
+        if self.game.DOWN_KEY:
+            if self.state == 'PVP':
+                self.cursor_rect.midtop = (self.pvsaix + self.offset, self.pvsaiy)
+                self.state = 'P vs AI'
+            elif self.state == 'P vs AI':
+                self.cursor_rect.midtop = (self.pvpx + self.offset, self.pvpy)
+                self.state = 'PVP'
+        elif self.game.UP_KEY:
+            if self.state == 'PVP':
+                self.cursor_rect.midtop = (self.pvsaix + self.offset, self.pvsaiy)
+                self.state = 'P vs AI'
+            elif self.state == 'P vs AI':
+                self.cursor_rect.midtop = (self.pvpx + self.offset, self.pvpy)
+                self.state = 'PVP'
+
+    def check_input(self):
+        self.move_cursor()
+        if self.game.BACK_KEY:
+            self.game.curr_menu = self.game.main_menu
+            self.run_display = False
+        elif self.game.START_KEY:
+            if self.state == 'PVP':
+                self.game.playing = True
+                self.game.game_loop()
+            elif self.state == 'P vs AI':
+                self.game.playing = True
+                self.game.game_loop()
             self.run_display = False
 
 class OptionsMenu(Menu):
@@ -140,7 +197,6 @@ class OptionsMenu(Menu):
             self.run_display = False
         elif self.game.START_KEY:
             if self.state == 'Volume':
-                #TODO: Add volume control
                 self.game.curr_menu = self.game.volume
                 self.run_display = False
             elif self.state == 'Credits':

@@ -2,7 +2,7 @@ from menu.menu import *
 from menu.options import *
 from menu.music import *
 from play_game import *
-
+from pvp.pvp import *
 
 class Game():
     def __init__(self):
@@ -21,6 +21,7 @@ class Game():
         self.options = OptionsMenu(self)
         self.credits = CreditsMenu(self)
         self.volume = VolumeMenu(self)
+        self.mode = ModeMenu(self)
         self.curr_menu = self.main_menu
         self.run = True
         self.music.load_music(PATH_SOUND + "8-bit.mp3")
@@ -31,8 +32,12 @@ class Game():
             self.check_events()
             if self.START_KEY:
                 self.playing = False
-                game = PlayGame()
-                game.start_game()
+                if self.mode.state == 'P vs AI':
+                    game = PlayGame()
+                    game.start_game()
+                elif self.mode.state == 'PVP':
+                    game = PVPGame()
+                    game.start_game()
             pygame.display.update()
             self.reset_keys()
 
