@@ -37,7 +37,6 @@ class PVPGame:
         self.player2 = False
         self.black_list = []
         self.white_list= []
-        self.queen_list = []
         self.ball_images = []
         self.to_remove = []
 
@@ -54,6 +53,8 @@ class PVPGame:
 
         self.player1_ball_type = "white"
         self.player2_ball_type = "black"
+
+        self.queen_potted = False
         # Define the pattern based on the shape file
         pattern = [
             ['', '', '0', '', ''],
@@ -78,9 +79,8 @@ class PVPGame:
                     elif pattern[row][col] == '0':
                         self.striker_balls.append(self.white_ball)
                         self.white_list.append(new_ball)
-                    elif pattern[row][col] == 'Q':
-                        self.striker_balls.append(self.queen)  # Add queen's image, not the object itself
-                        self.queen_list.append(new_ball)
+                    else:
+                        self.striker_balls.append(self.queen)
 
         self.force = 0
 
@@ -166,38 +166,28 @@ class PVPGame:
             self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 663)
 
     def check_potted_ball(self, ball):
-        if ball in self.black_list:
+        if ball == self.queen:
+            if len(self.white_list) == 1 or len(self.black_list) == 1:
+                # Một trong hai bên không còn viên của mình, viên queen có thể bị bắn xuống lỗ
+                self.queen_potted = True
+            else:
+                # Cả hai bên vẫn còn viên của mình, viên queen sẽ được đưa lại giữa bàn
+                self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 663)
+                self.balls.append(self.queen)
+                self.striker_balls.append(self.queen)
+
+        elif ball in self.black_list:
             if self.player1_ball_type == "black":
-                # Người chơi 1 bắn được viên đen xuống lỗ, tiếp tục lượt
                 pass
             else:
-                # Người chơi 1 bắn viên đen xuống lỗ, đổi sang lượt người chơi 2
                 self.switch_players()
         elif ball in self.white_list:
             if self.player1_ball_type == "white":
-                # Người chơi 1 bắn được viên trắng xuống lỗ, tiếp tục lượt
                 pass
             else:
-                # Người chơi 1 bắn viên trắng xuống lỗ, đổi sang lượt người chơi 2
                 self.switch_players()
         elif ball == self.queen:
-            # Xử lý trường hợp bắn được viên queen
             pass
-
-    def return_queen(self):
-        # Calculate the position of the queen's return
-        pos = (self.WINDOW_GAME.get_width() // 2, self.WINDOW_GAME.get_height() // 2)
-        # Initialize the queen image (only needed for drawing)
-        self.queen_image = pygame.transform.scale(pygame.image.load(PATH_IMAGE + "queen.png"),
-                                                  (BALL_SIZE)).convert_alpha()
-        # Create a new queen at the center of the board
-        new_queen = self.create_ball(DIA / 2, pos)
-        self.balls.append(new_queen)
-        self.queen_list.append(new_queen)
-
-        # Append the queen image to striker_balls instead of the object
-        self.striker_balls.append(self.queen_image)
-
 
     def start_game(self):
         running = True
@@ -229,7 +219,7 @@ class PVPGame:
             #     # Thay đổi lượt người chơi sau khi bắn và tất cả các viên bi đã dừng lại
             #     self.player1, self.player2 = self.player2, self.player1
 
-            player_text = font.render("Player 1's Turn", True, (255, 255, 255)) if self.player1 else font.render("Player 2's Turn", True, (255, 255, 255))
+            player_text = font.render("Black's Turn", True, COLOR_WHITE) if self.player1 else font.render("White's Turn", True, COLOR_WHITE)
             self.WINDOW_GAME.blit(player_text, (10, 50))
             for i, ball in enumerate(self.balls):
                 for pocket in POCKETS:
@@ -250,17 +240,6 @@ class PVPGame:
                             self.player1 = True
                             self.player2 = False
                             pygame.display.flip()
-                        elif ball in self.queen_list:
-                            self.queen_list.remove(ball)
-                            print("Queen pocketed")
-                            if len(self.black_list) == 1 or len(self.white_list) == 1:
-                                print("Last ball remaining! Queen stays off the board.")
-                                # Do not put the queen back in the middle
-                            else:
-                                print("Returning queen to the middle.")
-                                self.return_queen()
-                            pygame.display.flip()
-
                         ball.collision_type = 1
                         handler = self.space.add_collision_handler(1, 0)  # 0 is the collision type of the other objects
                         handler.begin = lambda a, b, arbiter: False  # Modify this line
@@ -269,11 +248,12 @@ class PVPGame:
                         self.balls.remove(ball)
                         self.potted_ball.append(self.striker_balls[i])
                         self.striker_balls.pop(i)
-
-            if len(self.white_list) == 0 and self.queen not in self.balls:
-                print("Player 1 wins!")
-            elif len(self.black_list) == 0 and self.queen not in self.balls:
-                print("Player 2 wins!")
+            if self.queen_potted:
+                if len(self.white_list) == 0:
+                    print("White wins!")
+                elif len(self.black_list) == 0:
+                    print("Black wins!")
+                self.queen_potted = False
 
             # print(self.potted_ball)
 
