@@ -32,42 +32,72 @@ class PlayGame:
         self.powering_up = True
         self.player_turn = True
         self.ai_turn = False
+        self.player_ball = []
+        self.ai_ball = []
         rows = 5
         dia = 38
-        for col in range(5):
-            for row in range(rows):
-                pos = (550 + (col * (dia + 1)), 330 + (row * (dia + 1)) + (col * dia / 2))
-                new_ball = self.create_ball(dia/2, pos)
-                self.balls.append(new_ball)
-            rows -= 1
+        # for col in range(5):
+        #     for row in range(rows):
+        #         pos = (550 + (col * (dia + 1)), 330 + (row * (dia + 1)) + (col * dia / 2))
+        #         new_ball = self.create_ball(dia/2, pos)
+        #         self.balls.append(new_ball)
+        #     rows -= 1
+        pattern = [
+            ['', '', '0', '', ''],
+            ['', '0', '*', '*', ''],
+            ['*', '0', 'Q', '0', '*'],
+            ['', '*', '*', '0', ''],
+            ['', '', '0', '', '']
+        ]
         self.force = 0
         new_size = (int(self.cue_ball.radius * 2), int(self.cue_ball.radius * 2))
         self.ball_image = pygame.transform.scale(pygame.image.load(PATH_IMAGE + "striker.png").convert_alpha(),new_size)
         self.white_ball = pygame.transform.scale(pygame.image.load(PATH_IMAGE + "white_new.png").convert_alpha(),new_size)
         self.black_ball = pygame.transform.scale(pygame.image.load(PATH_IMAGE + "black_new.png").convert_alpha(),new_size)
         self.queen = pygame.transform.scale(pygame.image.load(PATH_IMAGE + "queen.png").convert_alpha(), new_size)
-        for i in range(0, 16):
-            if i == 9:
-                the_ball = self.queen
-            elif i % 2 == 0:
-                the_ball = self.black_ball
-            else:
-                the_ball = self.white_ball
-            self.ball_images.append(the_ball)
+        # for i in range(0, 16):
+        #     if i == 9:
+        #         the_ball = self.queen
+        #     elif i % 2 == 0:
+        #         the_ball = self.black_ball
+        #     else:
+        #         the_ball = self.white_ball
+        #     self.ball_images.append(the_ball)
+
+        self.force = 0
         self.cue = Cue(self.cue_ball.body.position)
         self.potted = []
         self.potted_ball = []
         self.old_potted = []
+        self.queen_ball = []
         self.playcount = 0
-        self.player_ball = []
-        self.ai_ball = []
         self.to_remove = []
         self.ball_potted_in_turn = False
-        for i, ball in enumerate(self.balls):
-            if i % 2 == 0:
-                self.ai_ball.append(ball)
-            else:
-                self.player_ball.append(ball)
+        # for i, ball in enumerate(self.balls):
+        #     if i % 2 == 0:
+        #         self.ai_ball.append(ball)
+        #     else:
+        #         self.player_ball.append(ball)
+        for row in range(5):
+            for col in range(5):
+
+                pos = (BALL_POSITION[0] + (col * (DIA + 1)), BALL_POSITION[1] + (row * (DIA + 1)))
+
+                if pattern[row][col] != '':
+                    new_ball = self.create_ball(DIA/2, pos)
+                    self.balls.append(new_ball)
+
+                    if pattern[row][col] == '*':
+                        self.ball_images.append(self.black_ball)
+                        self.ai_ball.append(new_ball)
+                    elif pattern[row][col] == '0':
+                        self.ball_images.append(self.white_ball)
+                        self.player_ball.append(new_ball)
+                    else:
+                        self.ball_images.append(self.queen)
+                        self.queen_ball.append(new_ball)
+                        self.player_ball.append(new_ball)
+                        self.ai_ball.append(new_ball)
 
     def create_ball(self, radius, pos):
         body = pymunk.Body()
@@ -141,8 +171,6 @@ class PlayGame:
             self.create_cushion(c)
         while running:
             taking_shot = True
-            flag = 0
-            balls_potted = False
 
             self.space.step(1 / 60)
             dt = self.clock.tick(60) / 1000
@@ -169,6 +197,7 @@ class PlayGame:
                             self.ai_ball.remove(ball)
                             self.player_turn = False
                             self.ai_turn = True
+                            pygame.display.flip()
                         elif ball in self.player_ball:
                             if ball in self.player_ball:  # Check if the ball exists in the list before removing
                                 self.player_ball.remove(ball)
@@ -177,6 +206,7 @@ class PlayGame:
                             self.player_turn = True
                             self.ai_turn = False
                             self.key_down = True
+                            pygame.display.flip()
                         self.potted.append(self.ball_images[i])
                         ball.collision_type = 1
                         handler = self.space.add_collision_handler(1, 0)  # 0 is the collision type of the other objects
@@ -188,29 +218,21 @@ class PlayGame:
                         self.ball_images.pop(i)
 
             #gọi AI
-            if self.is_moving() == False and self.key_down == True and self.ai_turn == False:  # player turn
-                self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 663)
-                self.key_down = False
-                self.change_turn()
-                self.player_switch_timer = 8
-
-            if self.is_moving() == False and self.player_turn == False:
+            if self.is_moving() == False and self.key_down == True and self.ai_turn == False:
                 self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 140)
                 ai(self, 80, 500, 0.3, 0.9, dt, 70, 70)
                 self.key_down = False
                 self.change_turn()
                 self.player_switch_timer = 8
-            # if self.is_moving() == False and self.key_down == True and self.player_turn == True:
-            #     self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 663)
-            #     self.key_down = False
-            # elif self.is_moving() == False and self.player_turn == False:
-            #     self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 140)
-            #ai(self, 80, 500, 0.3, 0.9, dt, 70, 70)
-            #     self.key_down = False
+
+            if self.is_moving() == False and self.player_turn == False:
+                self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 663)
+                self.key_down = False
+                self.change_turn()
+                self.player_switch_timer = 8
 
             for i, ball in enumerate(self.balls):
                 self.WINDOW_GAME.blit(self.ball_images[i],(ball.body.position[0] - ball.radius, ball.body.position[1] - ball.radius))
-
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
@@ -257,4 +279,5 @@ class PlayGame:
             pygame.draw.rect(self.WINDOW_GAME, COLOR_BLACK, (350, 700, self.force * 5, 30))
 
             pygame.display.flip()
+
         pygame.quit()

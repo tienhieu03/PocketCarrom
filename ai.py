@@ -45,7 +45,7 @@ def ai(play_game, max_angle, max_speed, decelerate, e, dt, max_cut_shot_angle=70
     #player, opponent = play_game.player, (play_game.playcount + 1) % 2
     """ Coins on the board and the coins which player can hit """
     board_coins = play_game.balls
-    ai_coin = play_game.ai_ball
+    ai_coin = play_game.player_ball
     #if not play_game.pocketed_queen:
     #    board_coins.append(play_game.queen)
     direction_vec = Vector2(0, -1) if play_game.playcount == 0 else Vector2(0, 1)
@@ -55,10 +55,14 @@ def ai(play_game, max_angle, max_speed, decelerate, e, dt, max_cut_shot_angle=70
     #board, container = play_game.board, play_game.board.container
     pocket_radius = POCKET_DIA / 2
     pocket_centers = POCKETS
+    if len(play_game.player_ball) == 0 and len(play_game.queen_ball) == 1:
+        ai_coin = play_game.queen_ball
+    else:
+        ai_coin = play_game.player_ball
     if not play_game.are_balls_and_cue_ball_stopped():
         return
     """ Simply hit straight at some coin """
-    for coin in play_game.ai_ball:
+    for coin in ai_coin:
         for striker_x in range(int(x_limits[0]), int(x_limits[1] + 1), 1):
             striker_position = play_game.cue_ball.body.position
             dx = coin.body.position[0] - striker_position[0]
