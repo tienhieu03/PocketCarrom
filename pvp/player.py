@@ -7,8 +7,3 @@ class Player:
         self.position2 = (window_game.get_width() // 2, 140)
         self.ball_color = ball_color  # new attribute
         self.cue = cue_ball
-    def increase_score(self, points):
-        self.score += points
-
-    def get_score(self):
-        return self.score

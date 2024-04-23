@@ -50,6 +50,9 @@ class PVPGame:
         #self.playert2 = Player("player2", self.striker_ball, self.WINDOW_GAME, self.white_list)
         self.white_list.append(self.white_ball)
         self.black_list.append(self.black_ball)
+
+        self.player1_ball_type = "white"
+        self.player2_ball_type = "black"
         # Define the pattern based on the shape file
         pattern = [
             ['', '', '0', '', ''],
@@ -159,6 +162,26 @@ class PVPGame:
             self.player2 = False
             self.player1 = True
             self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 663)
+
+    def check_potted_ball(self, ball):
+        if ball in self.black_list:
+            if self.player1_ball_type == "black":
+                # Người chơi 1 bắn được viên đen xuống lỗ, tiếp tục lượt
+                pass
+            else:
+                # Người chơi 1 bắn viên đen xuống lỗ, đổi sang lượt người chơi 2
+                self.switch_players()
+        elif ball in self.white_list:
+            if self.player1_ball_type == "white":
+                # Người chơi 1 bắn được viên trắng xuống lỗ, tiếp tục lượt
+                pass
+            else:
+                # Người chơi 1 bắn viên trắng xuống lỗ, đổi sang lượt người chơi 2
+                self.switch_players()
+        elif ball == self.queen:
+            # Xử lý trường hợp bắn được viên queen
+            pass
+
     def start_game(self):
         running = True
         font = pygame.font.Font(None, 36)  # Choose a font and font size
@@ -197,6 +220,7 @@ class PVPGame:
                     ball_y_dist = abs(ball.body.position[1] - pocket[1])
                     ball_dist = math.sqrt(ball_x_dist ** 2 + ball_y_dist ** 2)
                     if ball_dist <= POCKET_DIA / 2:
+                        self.check_potted_ball(ball)
                         if ball in self.black_list:
                             self.black_list.remove(ball)
                             print("Black ball pocketed")
@@ -218,7 +242,12 @@ class PVPGame:
                         self.potted_ball.append(self.striker_balls[i])
                         self.striker_balls.pop(i)
 
-
+            if len(self.white_list) == 0 and self.queen not in self.balls:
+                # Người chơi 1 (viên trắng) thắng
+                pass
+            elif len(self.black_list) == 0 and self.queen not in self.balls:
+                # Người chơi 2 (viên đen) thắng
+                pass
 
             # print(self.potted_ball)
 
