@@ -119,8 +119,9 @@ class PVPGame:
 
         return True
     def is_moving(self):
-        velocity = self.cue_ball.body.velocity
-        return velocity != (0, 0)
+        cue_ball_velocity = self.cue_ball.body.velocity
+        balls_velocity = [ball.body.velocity for ball in self.balls]
+        return cue_ball_velocity != (0, 0) or any(ball_velocity != (0, 0) for ball_velocity in balls_velocity)
 
 
     def checkEvent(self, event, taking_shot):
@@ -149,8 +150,19 @@ class PVPGame:
                 self.cue_ball.body.position = (new_x, self.cue_ball.body.position[1])
                 self.key_down = False
 
+    def switch_players(self):
+        if self.player1 == True:
+            self.player1 = False
+            self.player2 = True
+            self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 140)
+        elif self.player2 == True:
+            self.player2 = False
+            self.player1 = True
+            self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 663)
     def start_game(self):
         running = True
+        font = pygame.font.Font(None, 36)  # Choose a font and font size
+        self.player_switch_timer = 8  # Timer in seconds (adjust as needed)
         for c in CUSHION:
             self.create_cushion(c)
         while running:
@@ -162,13 +174,23 @@ class PVPGame:
             self.WINDOW_GAME.blit(self.striker_ball, (self.cue_ball.body.position[0] - self.cue_ball.radius,
                                                       self.cue_ball.body.position[1] - self.cue_ball.radius))
 
+            if taking_shot and not self.is_moving():
+                self.player_switch_timer -= dt
+            self.player_switch_timer = max(self.player_switch_timer, 0)
+            timer_text = font.render("Timer: " + str(int(self.player_switch_timer)), True, (255, 255, 255))
+            self.WINDOW_GAME.blit(timer_text, (10, 10))  # Adjust position as needed
+            if self.player_switch_timer <= 0:
+                self.switch_players()
+                self.player_switch_timer = 8
 
 
             # Kiểm tra xem tất cả các viên bi và bi striker có đang di chuyển hay không
-            if self.are_balls_and_cue_ball_stopped() and not self.is_moving():
-                # Thay đổi lượt người chơi sau khi bắn và tất cả các viên bi đã dừng lại
-                self.player1, self.player2 = self.player2, self.player1
+            # if self.are_balls_and_cue_ball_stopped() and not self.is_moving():
+            #     # Thay đổi lượt người chơi sau khi bắn và tất cả các viên bi đã dừng lại
+            #     self.player1, self.player2 = self.player2, self.player1
 
+            player_text = font.render("Player 1's Turn", True, (255, 255, 255)) if self.player1 else font.render("Player 2's Turn", True, (255, 255, 255))
+            self.WINDOW_GAME.blit(player_text, (10, 50))
             for i, ball in enumerate(self.balls):
                 for pocket in POCKETS:
                     ball_x_dist = abs(ball.body.position[0] - pocket[0])
@@ -197,14 +219,20 @@ class PVPGame:
                         self.striker_balls.pop(i)
 
 
+
             # print(self.potted_ball)
 
-            if self.is_moving() == False and self.key_down == True and self.player2 == True:
+            if self.is_moving() == False and self.key_down == True and self.player2 == False:
                 self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 140)
                 self.key_down = False
-            if self.is_moving() == False and self.key_down == True and self.player1 == True:
+                self.switch_players()
+                self.player_switch_timer = 8
+
+            if self.is_moving() == False and self.key_down == True and self.player1 == False:
                 self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 663)
                 self.key_down = False
+                self.switch_players()
+                self.player_switch_timer = 8
 
             for i, ball in enumerate(self.balls):
                 self.WINDOW_GAME.blit(self.striker_balls[i],(ball.body.position[0] - ball.radius, ball.body.position[1] - ball.radius))
@@ -251,20 +279,23 @@ class PVPGame:
 
             #print(self.cue_ball.body.position)
             #self.space.debug_draw(self.draw_options)
-            if len(self.potted_ball) <= len(self.old_potted) and len(self.potted_ball) > 0:
-                if self.player1 == True:
-                    self.player1 = False
-                    self.player2 = True
-                elif self.player2 == True:
-                    self.player1 = True
-                    self.player2 = False
-            elif len(self.potted_ball) > len(self.old_potted):
-                self.old_potted = self.potted_ball.copy()
+            # if len(self.potted_ball) <= len(self.old_potted) and len(self.potted_ball) > 0:
+            #     if self.player1 == True:
+            #         self.player1 = False
+            #         self.player2 = True
+            #     elif self.player2 == True:
+            #         self.player1 = True
+            #         self.player2 = False
+            # elif len(self.potted_ball) > len(self.old_potted):
+            #     self.old_potted = self.potted_ball.copy()
+
+
 
             if len(self.black_list) == 0:
                 pass
             elif len(self.white_list) == 0:
                 pass
+
             pygame.draw.rect(self.WINDOW_GAME, COLOR_DARK_BROWN, (*POWER_BAR_POSITION, *POWER_BAR_SIZE))
             pygame.draw.rect(self.WINDOW_GAME, COLOR_WHITE, (
             POWER_BAR_POSITION[0], POWER_BAR_POSITION[1] + POWER_BAR_SIZE[1] - self.force * 5, POWER_BAR_SIZE[0],
