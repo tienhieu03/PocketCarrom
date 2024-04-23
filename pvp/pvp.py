@@ -53,6 +53,8 @@ class PVPGame:
 
         self.player1_ball_type = "white"
         self.player2_ball_type = "black"
+
+        self.queen_potted = False
         # Define the pattern based on the shape file
         pattern = [
             ['', '', '0', '', ''],
@@ -164,7 +166,17 @@ class PVPGame:
             self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 663)
 
     def check_potted_ball(self, ball):
-        if ball in self.black_list:
+        if ball == self.queen:
+            if len(self.white_list) == 1 or len(self.black_list) == 1:
+                # Một trong hai bên không còn viên của mình, viên queen có thể bị bắn xuống lỗ
+                self.queen_potted = True
+            else:
+                # Cả hai bên vẫn còn viên của mình, viên queen sẽ được đưa lại giữa bàn
+                self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 663)
+                self.balls.append(self.queen)
+                self.striker_balls.append(self.queen)
+
+        elif ball in self.black_list:
             if self.player1_ball_type == "black":
                 # Người chơi 1 bắn được viên đen xuống lỗ, tiếp tục lượt
                 pass
@@ -212,7 +224,7 @@ class PVPGame:
             #     # Thay đổi lượt người chơi sau khi bắn và tất cả các viên bi đã dừng lại
             #     self.player1, self.player2 = self.player2, self.player1
 
-            player_text = font.render("Player 1's Turn", True, (255, 255, 255)) if self.player1 else font.render("Player 2's Turn", True, (255, 255, 255))
+            player_text = font.render("Black's Turn", True, COLOR_WHITE) if self.player1 else font.render("White's Turn", True, COLOR_WHITE)
             self.WINDOW_GAME.blit(player_text, (10, 50))
             for i, ball in enumerate(self.balls):
                 for pocket in POCKETS:
@@ -241,13 +253,12 @@ class PVPGame:
                         self.balls.remove(ball)
                         self.potted_ball.append(self.striker_balls[i])
                         self.striker_balls.pop(i)
-
-            if len(self.white_list) == 0 and self.queen not in self.balls:
-                # Người chơi 1 (viên trắng) thắng
-                pass
-            elif len(self.black_list) == 0 and self.queen not in self.balls:
-                # Người chơi 2 (viên đen) thắng
-                pass
+            if self.queen_potted:
+                if len(self.white_list) == 0:
+                    print("White wins!")
+                elif len(self.black_list) == 0:
+                    print("Black wins!")
+                self.queen_potted = False
 
             # print(self.potted_ball)
 
