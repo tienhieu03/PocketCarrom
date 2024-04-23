@@ -121,15 +121,21 @@ class PVPGame:
         return velocity != (0, 0)
 
     def checkEvent(self, event, taking_shot):
-        # Kiểm tra sự kiện khi nút chuột được nhấn
+        # Check if the balls are moving
+        if not self.are_balls_and_cue_ball_stopped():
+            return
+
+        # Check the event when the mouse button is pressed
         if event.type == pygame.MOUSEBUTTONDOWN and taking_shot == True:
-            if event.button == 1:  # Nút chuột trái
+            if event.button == 1:  # Left mouse button
                 self.powering_up = True
                 self.mouse_pressed = True
-        # Kiểm tra sự kiện khi nút chuột được thả
+
+        # Check the event when the mouse button is released
         if event.type == pygame.MOUSEBUTTONUP and taking_shot == True:
             self.powering_up = False
-            self.key_down = True;
+            self.key_down = True
+
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_LEFT:
                 new_x = max(min(self.cue_ball.body.position[0] - 10, 1000), 380)
