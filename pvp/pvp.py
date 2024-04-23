@@ -40,6 +40,7 @@ class PVPGame:
         self.ball_images = []
         self.to_remove = []
 
+
         new_size = (int(self.cue_ball.radius * 2), int(self.cue_ball.radius * 2))
         self.striker_ball = pygame.transform.scale(pygame.image.load(PATH_IMAGE + "striker.png"),(BALL_SIZE)).convert_alpha()
         self.white_ball = pygame.transform.scale(pygame.image.load(PATH_IMAGE + "white_new.png"),(WHITE_BALL_SIZE)).convert_alpha()
@@ -47,7 +48,8 @@ class PVPGame:
         self.queen = pygame.transform.scale(pygame.image.load(PATH_IMAGE + "queen.png"), (BALL_SIZE)).convert_alpha()
         #self.playert1 = Player("player1", self.striker_ball, self.WINDOW_GAME, self.black_list)
         #self.playert2 = Player("player2", self.striker_ball, self.WINDOW_GAME, self.white_list)
-
+        self.white_list.append(self.white_ball)
+        self.black_list.append(self.black_ball)
         # Define the pattern based on the shape file
         pattern = [
             ['', '', '0', '', ''],
@@ -120,6 +122,7 @@ class PVPGame:
         velocity = self.cue_ball.body.velocity
         return velocity != (0, 0)
 
+
     def checkEvent(self, event, taking_shot):
         # Check if the balls are moving
         if not self.are_balls_and_cue_ball_stopped():
@@ -157,7 +160,14 @@ class PVPGame:
             self.WINDOW_GAME.fill(self.window_color)
             self.WINDOW_GAME.blit(self.bg, BOARD_POSITION)
             self.WINDOW_GAME.blit(self.striker_ball, (self.cue_ball.body.position[0] - self.cue_ball.radius,
-                                                    self.cue_ball.body.position[1] - self.cue_ball.radius))
+                                                      self.cue_ball.body.position[1] - self.cue_ball.radius))
+
+
+
+            # Kiểm tra xem tất cả các viên bi và bi striker có đang di chuyển hay không
+            if self.are_balls_and_cue_ball_stopped() and not self.is_moving():
+                # Thay đổi lượt người chơi sau khi bắn và tất cả các viên bi đã dừng lại
+                self.player1, self.player2 = self.player2, self.player1
 
             for i, ball in enumerate(self.balls):
                 for pocket in POCKETS:
@@ -167,11 +177,13 @@ class PVPGame:
                     if ball_dist <= POCKET_DIA / 2:
                         if ball in self.black_list:
                             self.black_list.remove(ball)
+                            print("Black ball pocketed")
                             self.player1 = False
                             self.player2 = True
                             pygame.display.flip()
                         elif ball in self.white_list:
                             self.white_list.remove(ball)
+                            print("White ball pocketed")
                             self.player1 = True
                             self.player2 = False
                             pygame.display.flip()
@@ -250,13 +262,9 @@ class PVPGame:
                 self.old_potted = self.potted_ball.copy()
 
             if len(self.black_list) == 0:
-                self.display_winner_message("Player 1 wins!")
-                pygame.quit()
-                sys.exit()
+                pass
             elif len(self.white_list) == 0:
-                self.display_winner_message("Player 2 wins!")
-                pygame.quit()
-                sys.exit()
+                pass
             pygame.draw.rect(self.WINDOW_GAME, COLOR_DARK_BROWN, (*POWER_BAR_POSITION, *POWER_BAR_SIZE))
             pygame.draw.rect(self.WINDOW_GAME, COLOR_WHITE, (
             POWER_BAR_POSITION[0], POWER_BAR_POSITION[1] + POWER_BAR_SIZE[1] - self.force * 5, POWER_BAR_SIZE[0],
