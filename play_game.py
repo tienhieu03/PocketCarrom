@@ -51,9 +51,9 @@ class PlayGame:
         ]
         self.force = 0
         new_size = (int(self.cue_ball.radius * 2), int(self.cue_ball.radius * 2))
-        self.ball_image = pygame.transform.scale(pygame.image.load(PATH_IMAGE + "striker.png").convert_alpha(),new_size)
-        self.white_ball = pygame.transform.scale(pygame.image.load(PATH_IMAGE + "white_new.png").convert_alpha(),new_size)
-        self.black_ball = pygame.transform.scale(pygame.image.load(PATH_IMAGE + "black_new.png").convert_alpha(),new_size)
+        self.ball_image = pygame.transform.scale(pygame.image.load(PATH_IMAGE + "striker.png").convert_alpha(),BALL_SIZE)
+        self.white_ball = pygame.transform.scale(pygame.image.load(PATH_IMAGE + "white_new.png").convert_alpha(),WHITE_BALL_SIZE)
+        self.black_ball = pygame.transform.scale(pygame.image.load(PATH_IMAGE + "black_new.png").convert_alpha(),BLACK_BALL_SIZE)
         self.queen = pygame.transform.scale(pygame.image.load(PATH_IMAGE + "queen.png").convert_alpha(), new_size)
         # for i in range(0, 16):
         #     if i == 9:
