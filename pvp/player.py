@@ -1,20 +1,12 @@
-from pvp.pvp import *
-
 class Player:
-    def __init__(self, game, name, cue_ball_pos, window_game):
+    def __init__(self, name, cue_ball, window_game, ball_color):
         self.name = name
-        self.game = game  # Reference to the game
-        self.cue_ball = self.create_cue_ball(cue_ball_pos)
-        self.ball_color = None  # Initialize ball color as None
-
-    def create_cue_ball(self, pos):
-        cue_ball = self.game.create_ball(38/2 , pos)
-        return cue_ball
-
-    # Method to set the ball color based on the first potted ball
-    def set_ball_color(self, color):
-        self.ball_color = color
-        print(f"{self.name} registered ball color: {self.ball_color}")
+        self.score = 0
+        self.position1 = (cue_ball.body.position[0] - cue_ball.radius,
+                          cue_ball.body.position[1] - cue_ball.radius)
+        self.position2 = (window_game.get_width() // 2, 140)
+        self.ball_color = ball_color  # new attribute
+        self.cue = cue_ball
     def increase_score(self, points):
         self.score += points
 

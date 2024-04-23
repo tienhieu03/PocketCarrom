@@ -1,90 +1,102 @@
-import pygame
 import math
-import heapq
+
 import pymunk
+from numpy.lib.user_array import container
+from pygame import Vector2
+from define import *
+def ___(angle_):
+    """ This function is used to normalize angles """
+    angle_ = angle_ % 360
+    return angle_ if angle_ <= 180 else angle_ - 360
+def straight_shot_speed(play_game, striker_position: Vector2, coin_position: Vector2,
+                        pocket_center: Vector2, decelerate, e):
+    from play_game import PlayGame
+    assert isinstance(play_game, PlayGame)
+    distance_coin_pocket = pocket_center.distance_to(coin_position)
+    distance_striker_coin = striker_position.distance_to(coin_position)
+    col_coin_speed = math.sqrt(2 * distance_coin_pocket * decelerate)
+    col_striker_speed = col_coin_speed * (5.5 + 15) / ((1 + e) * 15)
+    striker_speed = math.sqrt(col_striker_speed ** 2 + 2 * decelerate * distance_striker_coin)
+    return striker_speed
+def check_along_path(start, end, distance, coins, round_start=False, round_end=False):
+    """ This function checks if any of the coins lies within the given distance, of the line joining
+    the given two vectors, representing the end points """
+    for coin in coins:
+        diff_vector = end - start
+        section = (coin.body.position - start).dot(diff_vector) / (diff_vector.x ** 2 + diff_vector.y ** 2)
+        """ Whether to round or not """
+        section = section if not round_start else max(0, section)
+        section = section if not round_end else min(1, section)
+        if 0 <= section <= 1:
+            projection = start + section * (end - start)
+            diff_vector = coin.body.position - projection
+            distance_to_coin = math.sqrt(diff_vector.x ** 2 + diff_vector.y ** 2)
+            if distance_to_coin <= distance:
+                """ Coin lies within the distance of the vector """
+                return True
+    return False
 
-from play_game import *
-import play_game as pg
-class PriorityQueue:
-    def __init__(self):
-        self.elements = []
 
-    def empty(self):
-        return len(self.elements) == 0
 
-    def put(self, item, priority):
-        heapq.heappush(self.elements, (priority, item))
+def ai(play_game, max_angle, max_speed, decelerate, e, dt, max_cut_shot_angle=70, max_rebound_cut_shot_angle=70):
+    """ Carrom Ai which knows to play direct shots, rebound shots and cuts """
+    from play_game import PlayGame
+    assert isinstance(play_game, PlayGame), "play_game must be an instance of PlayGame class"
+    #player, opponent = play_game.player, (play_game.playcount + 1) % 2
+    """ Coins on the board and the coins which player can hit """
+    board_coins = play_game.balls
+    ai_coin = play_game.ai_ball
+    #if not play_game.pocketed_queen:
+    #    board_coins.append(play_game.queen)
+    direction_vec = Vector2(0, -1) if play_game.playcount == 0 else Vector2(0, 1)
+    x_limits = (380,820)
+    y_position = 140
+    coin_radius, striker_radius = play_game.cue_ball.radius, play_game.cue_ball.radius
+    #board, container = play_game.board, play_game.board.container
+    pocket_radius = POCKET_DIA / 2
+    pocket_centers = POCKETS
+    if not play_game.are_balls_and_cue_ball_stopped():
+        return
+    """ Simply hit straight at some coin """
+    for coin in play_game.ai_ball:
+        for striker_x in range(int(x_limits[0]), int(x_limits[1] + 1), 1):
+            striker_position = play_game.cue_ball.body.position
+            dx = coin.body.position[0] - striker_position[0]
+            dy = coin.body.position[1] - striker_position[1]
+            angle_of_attack = math.degrees(math.atan2(dy, dx))
+            attack_vector = coin.body.position - striker_position
+            collision_position = striker_position + attack_vector.normalized() * (
+                        attack_vector.length - coin_radius - striker_radius)
 
-    def get(self):
-        return heapq.heappop(self.elements)[1]
+            """ Simply hit the coins with max speed """
+            play_game.cue_ball.body.position = tuple(striker_position)
+            striker_angle = -90 - angle_of_attack if play_game.playcount == 0 else 90 - angle_of_attack
 
-class AI():
-    cue_image = pygame.image.load("assets/game/circles2.png")
-
-    def __init__(self, position, ball_image, balls):
-        self.space = pymunk.Space()
-        self.static_body = self.space.static_body
-        self.cue = self.create_ball(38 / 2, position)
-        self.striker = ball_image
-        self.position = position
-        self.balls = balls
-        self.pocket_centers = [(265, 61), (941, 58), (942, 736), (266, 729)]
-    def create_ball(self,radius, pos):
-        body = pymunk.Body()
-        body.position = pos
-        shape = pymunk.Circle(body, radius)
-        shape.mass = 5
-        shape.elasticity = 0.8
-        # use pivot joint to add friction
-        pivot = pymunk.PivotJoint(body, self.static_body, (0, 0), (0, 0))
-        pivot.max_bias = 0
-        pivot.max_force = 1000
-        self.space.add(body, shape, pivot)
-        return shape
-    def heuristic(self, a, b):
-        (x1, y1) = a
-        (x2, y2) = b
-        return abs(x1 - x2) + abs(y1 - y2)
-
-    def calculate_best_shot(self):
-        start = (self.cue.x, self.cue.y)
-        goal = self.pocket_centers[0]  # Assume the goal is the first pocket for simplicity
-        frontier = PriorityQueue()
-        frontier.put(start, 0)
-        came_from = {}
-        cost_so_far = {}
-        came_from[start] = None
-        cost_so_far[start] = 0
-
-        while not frontier.empty():
-            current = frontier.get()
-
-            if current == goal:
-                break
-
-            for next in self.game.neighbors(current):
-                new_cost = cost_so_far[current] + self.game.cost(current, next)
-                if next not in cost_so_far or new_cost < cost_so_far[next]:
-                    cost_so_far[next] = new_cost
-                    priority = new_cost + self.heuristic(goal, next)
-                    frontier.put(next, priority)
-                    came_from[next] = current
-
-        return came_from, cost_so_far
-
-    def execute_shot(self):
-        came_from, cost_so_far = self.calculate_best_shot()
-        # Find the path from the cue ball to the pocket
-        current = self.pocket_centers[0]
-        path = []
-        while current != (self.cue.x, self.cue.y):
-            path.append(current)
-            current = came_from[current]
-        path.append((self.cue.x, self.cue.y))
-        path.reverse()
-        # Apply an impulse to the cue ball in the direction of the first step of the path
-        next_step = path[1]
-        dx = next_step[0] - self.cue.x
-        dy = next_step[1] - self.cue.y
-        angle = math.atan2(dy, dx)
-        self.cue.apply_impulse_at_local_point((math.cos(angle) * 100, math.sin(angle) * 100), (0, 0))
+            r, theta = max_speed, striker_angle
+            # Set the velocity
+            #play_game.cue_ball.body.velocity = pymunk.Vec2d(dx, dy) * 2
+            play_game.cue_ball.body.apply_impulse_at_local_point((dx * 20, dy * 20), (0, 0))
+            print("AI does a simply direct hit with angle:",
+                  "%0.2f" % angle_of_attack, "degrees 20")
+            pygame.time.wait(4)
+            return
+    """ If nothing can be hit either way don't worry about the fouls try hitting the coin """
+    """ Simply hit straight at some coin """
+    for coin in play_game.ai_ball:
+        for striker_x in range(int(x_limits[0]), int(x_limits[1] + 1), 1):
+            striker_position = Vector2(striker_x, y_position)
+            dx = coin.body.position[0] - striker_position[0]
+            dy = coin.body.position[1] - striker_position[1]
+            angle_of_attack = math.degrees(pymunk.Vec2d(dx, dy).get_angle_between(direction_vec))
+            attack_vector = coin.body.position - striker_position
+            if abs(angle_of_attack) <= max_angle:
+                """ Simply hit the coins with max speed """
+                play_game.cue_ball.body.position = tuple(striker_position)
+                striker_angle = -90 - angle_of_attack if play_game.playcount == 0 else 90 - angle_of_attack
+                theta_radians = math.radians(striker_angle)
+                dx = max_speed * math.cos(theta_radians)
+                dy = max_speed * math.sin(theta_radians)
+                play_game.cue_ball.body.velocity = pymunk.Vec2d(dx, dy)* 2
+                print("AI does a simply direct hit with angle:",
+                      "%0.2f" % angle_of_attack, "degrees", "may face penalty 10")
+                return
