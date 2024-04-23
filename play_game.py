@@ -1,3 +1,5 @@
+from tkinter import font
+
 import pygame
 import sys
 import pymunk
@@ -15,7 +17,6 @@ class PlayGame:
         self.window_color = COLOR_BACKGROUND
         self.WINDOW_GAME = pygame.display.set_mode((WINDOW_WIDTH, WINDOW_HEIGHT))
         self.bg = pygame.transform.scale(pygame.image.load(PATH_IMAGE + "board.png"), (BOARD_SIZE)).convert()
-
         # khai bao them
         self.space = pymunk.Space()
         self.static_body = self.space.static_body
@@ -88,8 +89,9 @@ class PlayGame:
         self.space.add(body, shape)
 
     def is_moving(self):
-        velocity = self.cue_ball.body.velocity
-        return velocity != (0, 0)
+        cue_ball_velocity = self.cue_ball.body.velocity
+        balls_velocity = [ball.body.velocity for ball in self.balls]
+        return cue_ball_velocity != (0, 0) or any(ball_velocity != (0, 0) for ball_velocity in balls_velocity)
 
     def are_balls_and_cue_ball_stopped(self):
         if int(self.cue_ball.body.velocity[0]) != 0 or int(self.cue_ball.body.velocity[1]) != 0:
@@ -130,18 +132,32 @@ class PlayGame:
     def change_turn(self):
         self.player_turn = not self.player_turn
         self.ai_turn = not self.ai_turn
+
     def start_game(self):
         running = True
+        font = pygame.font.Font(None, 36)  # Choose a font and font size
+        self.player_switch_timer = 8
         for c in CUSHION:
             self.create_cushion(c)
         while running:
             taking_shot = True
+            flag = 0
+            balls_potted = False
+
             self.space.step(1 / 60)
             dt = self.clock.tick(60) / 1000
             self.WINDOW_GAME.fill(self.window_color)
             self.WINDOW_GAME.blit(self.bg, BOARD_POSITION)
             self.WINDOW_GAME.blit(self.ball_image, (self.cue_ball.body.position[0] - self.cue_ball.radius,
                                                     self.cue_ball.body.position[1] - self.cue_ball.radius))
+            if taking_shot and not self.is_moving():
+                self.player_switch_timer -= dt
+            self.player_switch_timer = max(self.player_switch_timer, 0)
+            timer_text = font.render("Timer: " + str(int(self.player_switch_timer)), True, (255, 255, 255))
+            self.WINDOW_GAME.blit(timer_text, (10, 10))  # Adjust position as needed
+            if self.player_switch_timer <= 0:
+                self.change_turn()
+                self.player_switch_timer = 8
 
             for i, ball in enumerate(self.balls):
                 for pocket in POCKETS:
@@ -149,17 +165,7 @@ class PlayGame:
                     ball_y_dist = abs(ball.body.position[1] - pocket[1])
                     ball_dist = math.sqrt(ball_x_dist ** 2 + ball_y_dist ** 2)
                     if ball_dist <= POCKET_DIA / 2:
-                        self.potted.append(self.ball_images[i])
-                        ball.collision_type = 1
-                        handler = self.space.add_collision_handler(1, 0)  # 0 is the collision type of the other objects
-                        handler.begin = lambda a, b, arbiter: False  # Modify this line
-                        self.to_remove.append(ball)
-                        self.space.remove(ball.body)
-                        self.balls.remove(ball)
-                        self.potted_ball.append(self.ball_images[i])
-                        self.ball_images.pop(i)
                         if ball in self.ai_ball:
-                            #self.potted_ball.append(self.ball_images[self.balls.index(ball)])
                             self.ai_ball.remove(ball)
                             self.player_turn = False
                             self.ai_turn = True
@@ -171,22 +177,43 @@ class PlayGame:
                             self.player_turn = True
                             self.ai_turn = False
                             self.key_down = True
+                        self.potted.append(self.ball_images[i])
+                        ball.collision_type = 1
+                        handler = self.space.add_collision_handler(1, 0)  # 0 is the collision type of the other objects
+                        handler.begin = lambda a, b, arbiter: False  # Modify this line
+                        self.to_remove.append(ball)
+                        self.space.remove(ball.body)
+                        self.balls.remove(ball)
+                        self.potted_ball.append(self.ball_images[i])
+                        self.ball_images.pop(i)
 
-            if self.is_moving() == False and self.key_down == True and self.player_turn == True:
+            #gọi AI
+            if self.is_moving() == False and self.key_down == True and self.ai_turn == False:  # player turn
                 self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 663)
                 self.key_down = False
+                self.change_turn()
+                self.player_switch_timer = 8
+
             if self.is_moving() == False and self.player_turn == False:
                 self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 140)
                 ai(self, 80, 500, 0.3, 0.9, dt, 70, 70)
                 self.key_down = False
+                self.change_turn()
+                self.player_switch_timer = 8
+            # if self.is_moving() == False and self.key_down == True and self.player_turn == True:
+            #     self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 663)
+            #     self.key_down = False
+            # elif self.is_moving() == False and self.player_turn == False:
+            #     self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 140)
+            #ai(self, 80, 500, 0.3, 0.9, dt, 70, 70)
+            #     self.key_down = False
 
             for i, ball in enumerate(self.balls):
                 self.WINDOW_GAME.blit(self.ball_images[i],(ball.body.position[0] - ball.radius, ball.body.position[1] - ball.radius))
-                print(self.ball_images[i])
+
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
-
                 self.checkEvent(event, taking_shot)
 
             for ball in self.balls:

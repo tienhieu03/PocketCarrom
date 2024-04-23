@@ -67,7 +67,6 @@ def ai(play_game, max_angle, max_speed, decelerate, e, dt, max_cut_shot_angle=70
             attack_vector = coin.body.position - striker_position
             collision_position = striker_position + attack_vector.normalized() * (
                         attack_vector.length - coin_radius - striker_radius)
-
             """ Simply hit the coins with max speed """
             play_game.cue_ball.body.position = tuple(striker_position)
             striker_angle = -90 - angle_of_attack if play_game.playcount == 0 else 90 - angle_of_attack
@@ -76,27 +75,29 @@ def ai(play_game, max_angle, max_speed, decelerate, e, dt, max_cut_shot_angle=70
             # Set the velocity
             #play_game.cue_ball.body.velocity = pymunk.Vec2d(dx, dy) * 2
             play_game.cue_ball.body.apply_impulse_at_local_point((dx * 20, dy * 20), (0, 0))
+
             print("AI does a simply direct hit with angle:",
                   "%0.2f" % angle_of_attack, "degrees 20")
             pygame.time.wait(4)
             return
-    """ If nothing can be hit either way don't worry about the fouls try hitting the coin """
-    """ Simply hit straight at some coin """
-    for coin in play_game.ai_ball:
-        for striker_x in range(int(x_limits[0]), int(x_limits[1] + 1), 1):
-            striker_position = Vector2(striker_x, y_position)
-            dx = coin.body.position[0] - striker_position[0]
-            dy = coin.body.position[1] - striker_position[1]
-            angle_of_attack = math.degrees(pymunk.Vec2d(dx, dy).get_angle_between(direction_vec))
-            attack_vector = coin.body.position - striker_position
-            if abs(angle_of_attack) <= max_angle:
-                """ Simply hit the coins with max speed """
-                play_game.cue_ball.body.position = tuple(striker_position)
-                striker_angle = -90 - angle_of_attack if play_game.playcount == 0 else 90 - angle_of_attack
-                theta_radians = math.radians(striker_angle)
-                dx = max_speed * math.cos(theta_radians)
-                dy = max_speed * math.sin(theta_radians)
-                play_game.cue_ball.body.velocity = pymunk.Vec2d(dx, dy)* 2
-                print("AI does a simply direct hit with angle:",
-                      "%0.2f" % angle_of_attack, "degrees", "may face penalty 10")
-                return
+        """ If nothing can be hit either way don't worry about the fouls try hitting the coin """
+        """ Simply hit straight at some coin """
+        for coin in play_game.ai_ball:
+            for striker_x in range(int(x_limits[0]), int(x_limits[1] + 1), 1):
+                striker_position = Vector2(striker_x, y_position)
+                dx = coin.body.position[0] - striker_position[0]
+                dy = coin.body.position[1] - striker_position[1]
+                angle_of_attack = math.degrees(pymunk.Vec2d(dx, dy).get_angle_between(direction_vec))
+                attack_vector = coin.body.position - striker_position
+                if abs(angle_of_attack) <= max_angle:
+                    """ Simply hit the coins with max speed """
+                    play_game.cue_ball.body.position = tuple(striker_position)
+                    striker_angle = -90 - angle_of_attack if play_game.playcount == 0 else 90 - angle_of_attack
+                    theta_radians = math.radians(striker_angle)
+                    dx = max_speed * math.cos(theta_radians)
+                    dy = max_speed * math.sin(theta_radians)
+                    play_game.cue_ball.body.velocity = pymunk.Vec2d(dx, dy) * 2
+                    print("AI does a simply direct hit with angle:",
+                          "%0.2f" % angle_of_attack, "degrees", "may face penalty 10")
+                    return
+
