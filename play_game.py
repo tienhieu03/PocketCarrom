@@ -207,6 +207,15 @@ class PlayGame:
                             self.ai_turn = False
                             self.key_down = True
                             pygame.display.flip()
+                        elif ball in self.queen_ball:
+                            self.queen_ball.remove(ball)
+                            if self.player_turn == True:
+                                self.player_turn = True
+                                self.ai_turn = False
+                            elif self.ai_turn == True:
+                                self.player_turn = False
+                                self.ai_turn = True
+                            pygame.display.flip()
                         self.potted.append(self.ball_images[i])
                         ball.collision_type = 1
                         handler = self.space.add_collision_handler(1, 0)  # 0 is the collision type of the other objects
