@@ -21,7 +21,6 @@ class PlayGame:
         self.static_body = self.space.static_body
         self.draw_options = pymunk.pygame_util.DrawOptions(self.WINDOW_GAME)
         pos = (self.WINDOW_GAME.get_width() // 2, 663)
-        aipos = (self.WINDOW_GAME.get_width() // 2, 140)
         self.cue_ball = self.create_ball(38/2,pos)
         self.clock = pygame.time.Clock()
         self.balls = []
@@ -30,7 +29,8 @@ class PlayGame:
         self.key_down = False
         self.force_direction = 1
         self.powering_up = True
-        self.playerturn = True
+        self.player_turn = True
+        self.ai_turn = False
         rows = 5
         dia = 38
         for col in range(5):
@@ -45,7 +45,6 @@ class PlayGame:
         self.white_ball = pygame.transform.scale(pygame.image.load(PATH_IMAGE + "white_new.png").convert_alpha(),new_size)
         self.black_ball = pygame.transform.scale(pygame.image.load(PATH_IMAGE + "black_new.png").convert_alpha(),new_size)
         self.queen = pygame.transform.scale(pygame.image.load(PATH_IMAGE + "queen.png").convert_alpha(), new_size)
-        self.ai = AI(aipos, self.ball_image, self.balls)
         for i in range(0, 16):
             if i == 9:
                 the_ball = self.queen
@@ -55,8 +54,19 @@ class PlayGame:
                 the_ball = self.white_ball
             self.ball_images.append(the_ball)
         self.cue = Cue(self.cue_ball.body.position)
+        self.potted = []
         self.potted_ball = []
-
+        self.old_potted = []
+        self.playcount = 0
+        self.player_ball = []
+        self.ai_ball = []
+        self.to_remove = []
+        self.ball_potted_in_turn = False
+        for i, ball in enumerate(self.balls):
+            if i % 2 == 0:
+                self.ai_ball.append(ball)
+            else:
+                self.player_ball.append(ball)
 
     def create_ball(self, radius, pos):
         body = pymunk.Body()
@@ -81,6 +91,15 @@ class PlayGame:
         velocity = self.cue_ball.body.velocity
         return velocity != (0, 0)
 
+    def are_balls_and_cue_ball_stopped(self):
+        if int(self.cue_ball.body.velocity[0]) != 0 or int(self.cue_ball.body.velocity[1]) != 0:
+            return False  # The cue ball is moving
+
+        for ball in self.balls:
+            if int(ball.body.velocity[0]) != 0 or int(ball.body.velocity[1]) != 0:
+                return False  # At least one ball is moving
+
+        return True
     def checkEvent(self, event, taking_shot):
         # Kiểm tra sự kiện khi nút chuột được nhấn
         if event.type == pygame.MOUSEBUTTONDOWN and taking_shot == True:
@@ -100,8 +119,17 @@ class PlayGame:
                 new_x = max(min(self.cue_ball.body.position[0] + 10, 820), 380)
                 self.cue_ball.body.position = (new_x, self.cue_ball.body.position[1])
                 self.key_down = False
-
-
+    def display_winner_message(self, message):
+        """Display a winner message."""
+        font = pygame.font.Font(None, 36)
+        text = font.render(message, True, (255, 255, 255))
+        text_rect = text.get_rect(center=(WINDOW_WIDTH / 2, WINDOW_HEIGHT / 2))
+        self.WINDOW_GAME.blit(text, text_rect)
+        pygame.display.flip()
+        pygame.time.wait(2000)
+    def change_turn(self):
+        self.player_turn = not self.player_turn
+        self.ai_turn = not self.ai_turn
     def start_game(self):
         running = True
         for c in CUSHION:
@@ -121,33 +149,40 @@ class PlayGame:
                     ball_y_dist = abs(ball.body.position[1] - pocket[1])
                     ball_dist = math.sqrt(ball_x_dist ** 2 + ball_y_dist ** 2)
                     if ball_dist <= POCKET_DIA / 2:
+                        self.potted.append(self.ball_images[i])
+                        ball.collision_type = 1
+                        handler = self.space.add_collision_handler(1, 0)  # 0 is the collision type of the other objects
+                        handler.begin = lambda a, b, arbiter: False  # Modify this line
+                        self.to_remove.append(ball)
                         self.space.remove(ball.body)
                         self.balls.remove(ball)
-                        self.potted_ball.append("a")
+                        self.potted_ball.append(self.ball_images[i])
                         self.ball_images.pop(i)
-                        if i % 2 ==0:
-                            self.playerturn = False
-                        elif i % 2 !=0:
-                            self.playerturn = True
-                        elif i == 9:
-                            if self.playerturn == True:
-                                self.playerturn = True
-                            elif self.playerturn == False:
-                                self.playerturn = False
-                    if self.playerturn == False:
-                        self.playerturn = True
+                        if ball in self.ai_ball:
+                            #self.potted_ball.append(self.ball_images[self.balls.index(ball)])
+                            self.ai_ball.remove(ball)
+                            self.player_turn = False
+                            self.ai_turn = True
+                        elif ball in self.player_ball:
+                            if ball in self.player_ball:  # Check if the ball exists in the list before removing
+                                self.player_ball.remove(ball)
+                            if self.is_moving() == False:
+                                self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 663)
+                            self.player_turn = True
+                            self.ai_turn = False
+                            self.key_down = True
 
-            # print(self.potted_ball)
-            if self.is_moving() == False and self.playerturn == False:
-                self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 140)
-                self.key_down = False
-            if self.is_moving() == False and self.key_down == True and self.playerturn == True:
+            if self.is_moving() == False and self.key_down == True and self.player_turn == True:
                 self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 663)
+                self.key_down = False
+            if self.is_moving() == False and self.player_turn == False:
+                self.cue_ball.body.position = (self.WINDOW_GAME.get_width() // 2, 140)
+                ai(self, 80, 500, 0.3, 0.9, dt, 70, 70)
                 self.key_down = False
 
             for i, ball in enumerate(self.balls):
                 self.WINDOW_GAME.blit(self.ball_images[i],(ball.body.position[0] - ball.radius, ball.body.position[1] - ball.radius))
-
+                print(self.ball_images[i])
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     running = False
@@ -155,12 +190,10 @@ class PlayGame:
                 self.checkEvent(event, taking_shot)
 
             for ball in self.balls:
-                if int(ball.body.velocity[0]) != 0 or int(ball.body.velocity[1]) != 0:
-                    taking_shot = False
-                if int(self.cue_ball.body.velocity[0]) != 0 or int(self.cue_ball.body.velocity[1]) != 0:
+                if self.are_balls_and_cue_ball_stopped() == False:
                     taking_shot = False
 
-            if taking_shot == True:
+            if taking_shot == True and self.player_turn == True:
                 # calculate cue angle
                 mouse_pos = pygame.mouse.get_pos()
                 self.cue.rect.center = self.cue_ball.body.position
@@ -170,12 +203,12 @@ class PlayGame:
                 self.cue.update(cue_angle)
                 self.cue.draw(self.WINDOW_GAME)
 
-            # Tăng lực nếu nút chuột được nhấn và giữ
+                # Tăng lực nếu nút chuột được nhấn và giữ
             if self.mouse_pressed and self.powering_up == True:
                 self.force += INCREASE_RATE * dt * self.force_direction
                 if self.force >= MAXFORCE or self.force <= 0:
                     self.force_direction *= -1
-            # Giảm lực nếu không có nút chuột nào được nhấn
+                # Giảm lực nếu không có nút chuột nào được nhấn
             elif self.powering_up == False and taking_shot == True:
                 x_impulse = self.force * math.cos(math.radians(self.cue.angle))
                 y_impulse = self.force * math.sin(math.radians(self.cue.angle))
@@ -183,9 +216,16 @@ class PlayGame:
                 self.force = 0
                 mouse_pressed = False
 
+            for obj in self.to_remove:
+                if obj.body in self.space.bodies:  # Check if the body is in the space
+                    self.space.remove(obj.body)
+                    self.balls.remove(obj)
+                    self.potted_ball.append(self.ball_images[self.balls.index(obj)])
+                    self.ball_images.pop(self.balls.index(obj))
+            self.to_remove.clear()
 
-            #print(self.cue_ball.body.position)
-            self.space.debug_draw(self.draw_options)
+            # print(self.cue_ball.body.position)
+            # self.space.debug_draw(self.draw_options)
             pygame.draw.rect(self.WINDOW_GAME, (50, 248, 8, 1), (350, 700, MAXFORCE * 5, 30))
             pygame.draw.rect(self.WINDOW_GAME, COLOR_BLACK, (350, 700, self.force * 5, 30))
 
